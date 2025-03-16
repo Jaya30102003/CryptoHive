@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Hive: A Hub for the Crypto Bees</title>
+    <link rel="icon" type="image/jpg" href="logo.jpg">>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Global Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('wallpaper.jpg'); /* Replace with your wallpaper URL */
+            background-size: cover; /* Ensure it covers the entire background */
+            background-position: center center; /* Center the background image */
+            color: #333;
+            line-height: 1.6;
+            height: 100vh; /* Full viewport height */
+        }
+
+        /* Container for all dashboard content */
+        .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Centers content horizontally */
+        justify-content: center; /* Centers content vertically */
+        height: 100vh; /* Full viewport height */
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: rgba(255, 255, 255, 0.75); /* More transparent (less opaque) */
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        /* Header styles */
+        h1,h3 {
+    text-align: center;
+    color: #2c3e50;
+    font-family: 'Dancing Script', cursive; /* Partially cursive font for the header */
+    font-size: 2.5rem;
+}
+
+        /* Select Currency dropdown */
+        select {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            color: #555;
+            cursor: pointer;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 250px;
+            display: block;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        /* Price Section */
+        #current-price {
+    font-size: 1.5rem;
+    text-align: center;
+    color: #27ae60;
+    font-weight: bold;
+    margin-bottom: 30px;
+    font-family: 'Dancing Script', cursive; /* Added cursive font */
+}
+
+
+        /* Bitcoin Chart Section */
+        #bitcoin-chart {
+            width: 100%;
+            height: 400px;
+            max-width: 800px;
+            margin: 0 auto; /* Centers the chart horizontally */
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Media Query for smaller screens */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            #current-price {
+                font-size: 1.2rem;
+            }
+
+            #bitcoin-chart {
+                height: 300px;
+            }
+
+            select {
+                width: 80%;
+            }
+        }
+
+        /* Loading and Error messages */
+        .loading {
+            font-size: 1.2rem;
+            color: #f39c12;
+            text-align: center;
+        }
+
+        .error {
+            font-size: 1.2rem;
+            color: #e74c3c;
+            text-align: center;
+        }
+
+        .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Centers content horizontally */
+        justify-content: center; /* Centers content vertically */
+        height: 100vh; /* Full viewport height */
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.50); /* Semi-transparent white */
+        border-radius: 10px;
+        border: 2px solid #FFD700; /* Gold border */
+        box-shadow: 0 4px 12px rgba(0, 255, 153, 0.4); /* Neon greenish-blue shadow */
+        backdrop-filter: blur(10px); /* Optional blur effect for background */
+    }
+    
+    /* Add a subtle gradient or background image if needed */
+    .container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('your-wallpaper-url.jpg'); /* Add a background image here */
+        background-size: cover;
+        background-position: center;
+        z-index: -1;
+        filter: brightness(50%); /* Adjust brightness of background */
+    }
+
+    /* Optional: Adjusting text color for better visibility */
+    h1, #current-price, #bitcoin-chart {
+        color: #333; /* Dark text for better contrast */
+    }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <br><br><br>
+        <h1>Crypto Hive</h1>
+        <h3>A hub for Crypto Bees</h3>
+        <br>
+
+        <div>
+            <label for="currency">Select Currency: </label>
+            <select id="currency" onchange="fetchBitcoinData()">
+                <option value="usd">USD</option>
+                <option value="eur">EUR</option>
+                <option value="gbp">GBP</option>
+            </select>
+        </div>
+
+        <h2>Current Price</h2>
+        <div id="current-price">Loading...</div>
+
+        <h2>Bitcoin Price History (Last 3 Months)</h2>
+        <canvas id="bitcoin-chart" style="height: 150px; width: 75%;"></canvas>
+    </div>
+
+    <script>
+        let chart;
+
+        function fetchBitcoinData() {
+            const currency = document.getElementById('currency').value;
+            const toDate = Math.floor(new Date().getTime() / 1000); // Current date in Unix timestamp
+            const fromDate = toDate - (60 * 60 * 24 * 90); // 3 months ago in Unix timestamp (90 days)
+
+            // Fetch current price
+            fetch(`http://localhost:8082/bitcoin-price?currency=${currency}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Assuming the API returns { "bitcoin": { "usd": 12345.67 } }
+                    document.getElementById('current-price').textContent = `Current Price: $${data.bitcoin[currency]}`;
+                })
+                .catch(error => console.error('Error fetching current price:', error));
+
+            // Fetch historical data for last 3 months
+            fetch(`http://localhost:8082/bitcoin-history?currency=${currency}&fromDate=${fromDate}&toDate=${toDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.prices.map(item => new Date(item[0]).toLocaleDateString());
+                    const prices = data.prices.map(item => item[1]);
+
+                    updateChart(labels, prices);
+                })
+                .catch(error => console.error('Error fetching historical data:', error));
+        }
+
+        function updateChart(labels, prices) {
+            const ctx = document.getElementById('bitcoin-chart').getContext('2d');
+            if (chart) {
+                chart.destroy(); // Destroy previous chart instance if it exists
+            }
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Bitcoin Price',
+                        data: prices,
+                        fill: false,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Price (in selected currency)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initial data fetch when the page loads
+        fetchBitcoinData();
+    </script>
+</body>
+</html>
