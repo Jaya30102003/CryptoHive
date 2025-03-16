@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Bitcoin Dashboard</h1>
+    
+    <div>
+        <label for="currency">Select Currency: </label>
+        <select id="currency" onchange="fetchBitcoinData()">
+            <option value="usd">USD</option>
+            <option value="eur">EUR</option>
+            <option value="gbp">GBP</option>
+        </select>
+    </div>
+
+    <h2>Current Price</h2>
+    <div id="current-price">Loading...</div>
+
+    <h2>Bitcoin Price History (Last 3 Months)</h2>
+    <canvas id="bitcoin-chart"></canvas>
+
+    <script>
+        let chart;
+
+        function fetchBitcoinData() {
+            const currency = document.getElementById('currency').value;
+            const toDate = Math.floor(new Date().getTime() / 1000); // Current date in Unix timestamp
+            const fromDate = toDate - (60 * 60 * 24 * 90); // 3 months ago in Unix timestamp (90 days)
+
+            // Fetch current price
+            fetch(`http://localhost:8082/bitcoin-price?currency=${currency}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Assuming the API returns { "bitcoin": { "usd": 12345.67 } }
+                    document.getElementById('current-price').textContent = `Current Price: $${data.bitcoin[currency]}`;
+                })
+                .catch(error => console.error('Error fetching current price:', error));
+
+            // Fetch historical data for last 3 months
+            fetch(`http://localhost:8082/bitcoin-history?currency=${currency}&fromDate=${fromDate}&toDate=${toDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.prices.map(item => new Date(item[0]).toLocaleDateString());
+                    const prices = data.prices.map(item => item[1]);
+
+                    updateChart(labels, prices);
+                })
+                .catch(error => console.error('Error fetching historical data:', error));
+        }
+
+        function updateChart(labels, prices) {
+            const ctx = document.getElementById('bitcoin-chart').getContext('2d');
+            if (chart) {
+                chart.destroy(); // Destroy previous chart instance if it exists
+            }
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Bitcoin Price',
+                        data: prices,
+                        fill: false,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Price (in selected currency)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initial data fetch when the page loads
+        fetchBitcoinData();
+    </script>
+</body>
+</html>
