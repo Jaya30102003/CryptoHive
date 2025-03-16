@@ -1,2 +1,2 @@
 #CryptoHive : A hub for Crypto Bees
-![CryptoHive Screenshot](static/logo.jpg)
+![CryptoHive Screenshot](src/main/resource/static/logo.jpg)
